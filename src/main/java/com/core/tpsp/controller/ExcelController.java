@@ -37,7 +37,7 @@ public class ExcelController {
 
     @GetMapping("/download/applications")
     public ResponseEntity<Resource> downloadApplicationFile() {
-        return buildExcelResponse(excelService.loadApplicantUnitFile());
+        return buildExcelResponse(excelService.loadAllocationFile());
     }
 
     @GetMapping("/download/convenor-ranking")

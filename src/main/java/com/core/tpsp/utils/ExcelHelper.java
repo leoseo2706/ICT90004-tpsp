@@ -77,7 +77,7 @@ public class ExcelHelper {
                         row.createCell(colIdx).setCellValue((Double) colVal);
                     } else if (colVal instanceof java.lang.Boolean) {
                         row.createCell(colIdx).setCellValue((
-                                (Boolean) colVal) == true ? "Yes" : "No");
+                                (Boolean) colVal) ? "Yes" : "No");
                     }
                     colIdx++;
                 }

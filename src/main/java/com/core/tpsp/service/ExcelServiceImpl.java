@@ -68,7 +68,7 @@ public class ExcelServiceImpl implements ExcelService {
     private UnitRepo unitRepo;
 
     @Override
-    public ExcelReportDTO loadApplicantUnitFile() {
+    public ExcelReportDTO loadAllocationFile() {
 
         log.info("Loading applicant file ...");
         Set<String> userIds = new HashSet<>();
@@ -81,6 +81,7 @@ public class ExcelServiceImpl implements ExcelService {
         log.info("Done loading application table apps {}, userIds: {}, clazzIds: {}",
                 apps, userIds, clazzIds);
 
+        // class data
         CompletableFuture<Map<Integer, ClazzDTO>> clazzFuture = CompletableFuture.supplyAsync(() -> {
             List<ClazzDTO> classes = clazzRepo.findByIdIn(clazzIds).stream()
                     .map(c -> {
@@ -112,6 +113,7 @@ public class ExcelServiceImpl implements ExcelService {
         });
 
 
+        // user data
         CompletableFuture<Map<String, UserDTO>> userFuture = CompletableFuture.supplyAsync(() -> {
             List<UserDTO> userDTOS = userRepo.findByIdIn(userIds).stream().map(x -> {
                 UserDTO dto = UserDTO.builder().build();
@@ -124,6 +126,7 @@ public class ExcelServiceImpl implements ExcelService {
             return userMap;
         });
 
+        // final data
         CompletableFuture<List<List<Object>>> combinedFuture = clazzFuture.thenCombine(userFuture,
                 (clazzData, userData) -> {
 
@@ -184,11 +187,10 @@ public class ExcelServiceImpl implements ExcelService {
         CompletableFuture<List<UserDTO>> userFuture = CompletableFuture.supplyAsync(() -> {
             List<User> users = userRepo.findByIdIn(userIds);
             List<UserDTO> data = users.stream().map(x -> {
-                UserDTO dto = UserDTO.builder().id(x.getId()).userName(x.getUserName())
-                        .firstName(x.getFirstName()).lastName(x.getLastName())
-                        .email(x.getEmail()).linkedinUrl(x.getLinkedinUrl())
+                UserDTO dto = UserDTO.builder()
                         .role(TPSPConstants.ROLE.CONVENOR)
                         .build();
+                BeanUtils.copyProperties(x, dto);
                 return dto;
             }).collect(Collectors.toList());
             log.info("Successfully found user list: {} ", TpspUtils.toJsonString(mapper, data));
@@ -211,13 +213,22 @@ public class ExcelServiceImpl implements ExcelService {
                         List<Object> list = new ArrayList<>();
                         list.add(x.getId());
                         list.add(x.getUserName());
-                        list.add(x.getFirstName());
-                        list.add(x.getLastName());
-                        list.add(x.getEmail());
-                        list.add(x.getLinkedinUrl());
                         list.add(x.getRole());
+                        list.add(x.getFirstName() + " " + x.getLastName());
+                        list.add(x.getEmail());
+                        list.add(x.getPhoneNumber());
                         Double averageRate = rankingData.get(x.getId());
                         list.add(averageRate == null ? 0.0 : averageRate);
+                        list.add(x.getSwinburneId());
+                        list.add(TpspUtils.concatenateAddress(x.getStreet(), x.getCity(),
+                                x.getState(), x.getPostalCode()));
+                        list.add(x.getQualification());
+                        list.add(x.getLinkedinUrl());
+                        list.add(x.getCitizenshipStudyStatus());
+                        list.add(x.getAustralianWorkRights());
+                        list.add(x.getNumberYearsWorkExperience());
+                        list.add(x.getPreviousTeachingExperience());
+                        list.add(x.getPublications());
                         return list;
                     }).collect(Collectors.toList());
 
@@ -242,5 +253,13 @@ public class ExcelServiceImpl implements ExcelService {
         log.info("Done creating excel data ...");
 
         return result;
+    }
+
+    @Override
+    public ExcelReportDTO loadUnitFile() {
+
+        log.info("Loading unit file ...");
+
+        return null;
     }
 }

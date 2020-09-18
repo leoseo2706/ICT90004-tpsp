@@ -25,8 +25,44 @@ public class User {
     @Column(name = "Email")
     private String email;
 
+    @Column(name = "PhoneNumber")
+    private String phoneNumber;
+
+    @Column(name = "SwinburneID")
+    private String swinburneId;
+
+    @Column(name = "Street")
+    private String street;
+
+    @Column(name = "City")
+    private String city;
+
+    @Column(name = "State")
+    private String state;
+
+    @Column(name = "PostalCode")
+    private String postalCode;
+
+    @Column(name = "Qualification")
+    private String qualification;
+
     @Column(name = "LinkedInProfileUrl")
     private String linkedinUrl;
+
+    @Column(name = "CitizenshipStudyStatus")
+    private String citizenshipStudyStatus;
+
+    @Column(name = "AustralianWorkRights")
+    private String australianWorkRights;
+
+    @Column(name = "NumberYearsWorkExperience")
+    private String numberYearsWorkExperience;
+
+    @Column(name = "PreviousTeachingExperience")
+    private String previousTeachingExperience;
+
+    @Column(name = "Publications")
+    private String publications;
 
 //    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 //    @JoinColumn(name = "Id", referencedColumnName = "userRoleKey.userId")
