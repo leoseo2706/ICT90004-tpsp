@@ -6,10 +6,10 @@ import java.io.ByteArrayInputStream;
 
 public interface ExcelService {
 	
-	public ExcelReportDTO loadAllocationFile();
+	public ExcelReportDTO loadApplicationFile();
 
 	public ExcelReportDTO loadConvenorRankingFile();
 
-	public ExcelReportDTO loadUnitFile();
+	public ExcelReportDTO loadAllocationFile();
 
 }

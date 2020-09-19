@@ -1,15 +1,7 @@
 package com.core.tpsp.controller;
 
-import com.core.tpsp.constant.TPSPConstants;
-import com.core.tpsp.entity.Role;
-import com.core.tpsp.entity.User;
-import com.core.tpsp.entity.UserRole;
-import com.core.tpsp.exception.TpspException;
 import com.core.tpsp.payload.ExcelReportDTO;
-import com.core.tpsp.payload.UserDTO;
-import com.core.tpsp.repo.RoleRepo;
-import com.core.tpsp.repo.UserRepo;
-import com.core.tpsp.repo.UserRoleRepo;
+import com.core.tpsp.service.ExcelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -20,14 +12,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.core.tpsp.service.ExcelService;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Controller
 @RequestMapping("/excel")
 public class ExcelController {
@@ -37,12 +21,17 @@ public class ExcelController {
 
     @GetMapping("/download/applications")
     public ResponseEntity<Resource> downloadApplicationFile() {
-        return buildExcelResponse(excelService.loadAllocationFile());
+        return buildExcelResponse(excelService.loadApplicationFile());
     }
 
     @GetMapping("/download/convenor-ranking")
     public ResponseEntity<Resource> downloadConvenorRankingFile() {
         return buildExcelResponse(excelService.loadConvenorRankingFile());
+    }
+
+    @GetMapping("/download/allocation")
+    public ResponseEntity<Resource> downloadAllocationFile() {
+        return buildExcelResponse(excelService.loadAllocationFile());
     }
 
     private ResponseEntity buildExcelResponse(ExcelReportDTO result) {

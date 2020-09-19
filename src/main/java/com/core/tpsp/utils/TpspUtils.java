@@ -55,4 +55,9 @@ public class TpspUtils {
         return address.trim();
     }
 
+    public static String toFullName(String firstName, String lastName) {
+        return !StringUtils.isEmpty(firstName) && !StringUtils.isEmpty(lastName)
+                ? (firstName + " " + lastName).trim() : "";
+    }
+
 }

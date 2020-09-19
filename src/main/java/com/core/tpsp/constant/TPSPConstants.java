@@ -14,4 +14,6 @@ public class TPSPConstants {
     public static interface DATE_FORMAT {
         String FORMAT_dd_MM_yyyy_hh_mm_ss = "dd/MM/yyyy HH:mm:ss";
     }
+
+    public static Boolean APPROVED = true;
 }
