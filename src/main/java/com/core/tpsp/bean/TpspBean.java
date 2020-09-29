@@ -1,5 +1,6 @@
 package com.core.tpsp.bean;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,9 +9,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
+
 @Configuration
 public class TpspBean {
-	
+
 	@Bean(name = "customMapper")
 	public ObjectMapper getCustomMapper() {
 		ObjectMapper mapper = new ObjectMapper();

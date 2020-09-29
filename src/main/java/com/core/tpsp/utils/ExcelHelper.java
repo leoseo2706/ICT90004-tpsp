@@ -28,7 +28,8 @@ public class ExcelHelper {
     public ByteArrayInputStream toExcelReport(List<List<Object>> payloads, List<String> headerCols,
                                               String sheetName) {
 
-        if (CollectionUtils.isEmpty(payloads) || CollectionUtils.isEmpty(headerCols) || StringUtils.isEmpty(sheetName)) {
+        if (CollectionUtils.isEmpty(payloads) || CollectionUtils.isEmpty(headerCols)
+                || StringUtils.isEmpty(sheetName)) {
             log.info("Empty payload");
             return new ByteArrayInputStream(new byte[0]);
         }
@@ -61,7 +62,7 @@ public class ExcelHelper {
             }
             log.info("Finished header {}...", TpspUtils.toJsonString(mapper, headerCols));
 
-            // other rows
+            // body rows
             int rowIdx = 1;
             for (List<Object> cols : payloads) {
                 Row row = sheet.createRow(rowIdx++);
@@ -90,7 +91,8 @@ public class ExcelHelper {
             return new ByteArrayInputStream(out.toByteArray());
 
         } catch (IOException e) {
-            String msg = MessageFormat.format("Encountered error while exporting excel file {0}", e.getMessage());
+            String msg = MessageFormat.format("Encountered error while exporting excel file {0}",
+                    e.getMessage());
             log.error(msg);
             throw new TpspException(msg);
         }

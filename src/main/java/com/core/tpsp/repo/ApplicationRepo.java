@@ -13,5 +13,4 @@ public interface ApplicationRepo extends JpaRepository<Application, Integer> {
 
     List<Application> findAllByOrderByApplicationIdDesc();
 
-
 }

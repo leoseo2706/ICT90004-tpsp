@@ -19,7 +19,7 @@ public class TpspUtils {
         } catch (Exception e) {
             log.warn("Error printing: {}", o);
         }
-        return "";
+        return TPSPConstants.EMPTY;
     }
 
     public static String format(Timestamp d) {
@@ -43,10 +43,10 @@ public class TpspUtils {
 
     public static String concatenateAddress(String street, String city,
                                             String state, String postalCode) {
-        street = !StringUtils.isEmpty(street) ? street : "";
-        city = !StringUtils.isEmpty(city) ? city : "";
-        state = !StringUtils.isEmpty(state) ? state : "";
-        postalCode = !StringUtils.isEmpty(postalCode) ? postalCode : "";
+        street = !StringUtils.isEmpty(street) ? street : TPSPConstants.EMPTY;
+        city = !StringUtils.isEmpty(city) ? city : TPSPConstants.EMPTY;
+        state = !StringUtils.isEmpty(state) ? state : TPSPConstants.EMPTY;
+        postalCode = !StringUtils.isEmpty(postalCode) ? postalCode : TPSPConstants.EMPTY;
 
         String address = StringUtils.isEmpty(street)
                 ? MessageFormat.format(TPSPConstants.ADDRESS_FORMAT.SHORT_ADDRESS_FORMAT, city, state, postalCode)
@@ -57,7 +57,7 @@ public class TpspUtils {
 
     public static String toFullName(String firstName, String lastName) {
         return !StringUtils.isEmpty(firstName) && !StringUtils.isEmpty(lastName)
-                ? (firstName + " " + lastName).trim() : "";
+                ? (firstName + " " + lastName).trim() : TPSPConstants.EMPTY;
     }
 
 }
