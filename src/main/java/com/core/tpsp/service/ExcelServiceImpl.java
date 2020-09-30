@@ -1,7 +1,9 @@
 package com.core.tpsp.service;
 
 import com.core.tpsp.constant.TPSPConstants;
-import com.core.tpsp.entity.*;
+import com.core.tpsp.entity.Application;
+import com.core.tpsp.entity.TutorPreference;
+import com.core.tpsp.entity.User;
 import com.core.tpsp.exception.TpspException;
 import com.core.tpsp.payload.*;
 import com.core.tpsp.repo.*;
@@ -9,6 +11,7 @@ import com.core.tpsp.utils.ExcelHelper;
 import com.core.tpsp.utils.TpspUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.CellType;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,11 +20,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @Slf4j
@@ -42,6 +47,9 @@ public class ExcelServiceImpl implements ExcelService {
     @Value("${report.allocation.sheet}")
     private String allocationSheet;
 
+    @Value("${report.column.approved}")
+    private String approvedColLetter;
+
     @Autowired
     ObjectMapper mapper;
 
@@ -50,12 +58,6 @@ public class ExcelServiceImpl implements ExcelService {
 
     @Autowired
     private ApplicationRepo applicationRepo;
-
-    @Autowired
-    private RoleRepo roleRepo;
-
-    @Autowired
-    private UserRoleRepo userRoleRepo;
 
     @Autowired
     private UserRepo userRepo;
@@ -73,105 +75,78 @@ public class ExcelServiceImpl implements ExcelService {
     public ExcelReportDTO loadApplicationFile() {
         log.info("Loading applicant file ...");
         List<Application> apps = applicationRepo.findAllByOrderByApplicationIdDesc();
-        return toExcelDTO(apps, appHeader, appSheet);
+        return toApplicationExcelDTO(apps, appHeader, appSheet, getExtraAppCells());
     }
 
     @Override
     public ExcelReportDTO loadConvenorRankingFile() {
 
-        log.info("Begin downloading convenor ranking file ...");
+        log.info("Loading convenor ranking file ...");
+        List<TutorPreference> preferences = tutorPreferenceRepo.findAllByOrderByTutor();
+        List<TutorPreferenceDTO> preferenceDTOs = preferences.stream().map(p -> {
 
-        Optional<Role> optionalRole = roleRepo.findByName(TPSPConstants.ROLE.CONVENOR);
-        if (!optionalRole.isPresent()) {
-            throw new TpspException("Unavailable role ");
-        }
-        log.info("Found role {}", TPSPConstants.ROLE.CONVENOR);
+            // force lazy loading. change it to eager to avoid troublesome?
+            User convenor = p.getConvenor();
+            UserDTO convenorDTO = UserDTO.builder().build();
+            BeanUtils.copyProperties(convenor, convenorDTO);
 
-        List<UserRole> userRoleList = userRoleRepo.findByUserRoleKeyRoleId(optionalRole.get().getId());
-        Set<String> userIds = userRoleList.stream()
-                .map(a -> a.getUserRoleKey().getUserId()).collect(Collectors.toSet());
-        log.info("Found user ID list {}", TpspUtils.toJsonString(mapper, userIds));
+            User tutor = p.getTutor();
+            UserDTO tutorDTO = UserDTO.builder().build();
+            BeanUtils.copyProperties(tutor, tutorDTO);
 
-        // main data future
-        CompletableFuture<List<UserDTO>> userFuture = CompletableFuture.supplyAsync(() -> {
-            List<User> users = userRepo.findByIdIn(userIds);
-            List<UserDTO> data = users.stream().map(x -> {
-                UserDTO dto = UserDTO.builder()
-                        .role(TPSPConstants.ROLE.CONVENOR)
-                        .build();
-                BeanUtils.copyProperties(x, dto);
-                return dto;
-            }).collect(Collectors.toList());
-            log.info("Successfully found user list: {} ", TpspUtils.toJsonString(mapper, data));
-            return data;
-        });
+            return TutorPreferenceDTO.builder().Id(p.getId())
+                    .convenor(convenorDTO).tutor(tutorDTO)
+                    .rating(p.getRating()).build();
+        }).collect(Collectors.toList());
+        log.info("Found preferences {}", preferenceDTOs);
 
-        // ranking data future
-        CompletableFuture<Map<String, Double>> rankingFuture = CompletableFuture.supplyAsync(() -> {
-            List<TutorPreference> rankings = tutorPreferenceRepo.findByConvenorIdIn(userIds);
-            Map<String, Double> rankingData = rankings.stream()
-                    .collect(Collectors.groupingBy(TutorPreference::getConvenorId, Collectors.averagingInt(TutorPreference::getRating)));
-            log.info("Successfully found user ranking data list: {} ", TpspUtils.toJsonString(mapper, rankingData));
-            return rankingData;
-        });
+        List<List<Object>> excelPayloads = preferenceDTOs.stream().map(x -> {
+            List<Object> payloadRow = new ArrayList<>();
+            UserDTO convenor = x.getConvenor();
+            if (convenor == null) {
+                IntStream.range(0, 4).forEach(i -> payloadRow.add(TPSPConstants.EMPTY));
+            } else {
+                payloadRow.add(convenor.getUserName());
+                payloadRow.add(TpspUtils.toFullName(convenor.getFirstName(), convenor.getLastName()));
+                payloadRow.add(convenor.getEmail());
+                payloadRow.add(convenor.getPhoneNumber());
+            }
 
-        // combined future
-        CompletableFuture<List<List<Object>>> combinedFuture = userFuture.thenCombine(rankingFuture,
-                (userData, rankingData) -> {
-                    List<List<Object>> result = userData.stream().map(x -> {
-                        List<Object> list = new ArrayList<>();
-                        list.add(x.getId());
-                        list.add(x.getUserName());
-                        list.add(x.getRole());
-                        list.add(TpspUtils.toFullName(x.getFirstName(), x.getLastName()));
-                        list.add(x.getEmail());
-                        list.add(x.getPhoneNumber());
-                        Double averageRate = rankingData.get(x.getId());
-                        list.add(averageRate == null ? 0.0 : averageRate);
-                        list.add(x.getSwinburneId());
-                        list.add(TpspUtils.concatenateAddress(x.getStreet(), x.getCity(),
-                                x.getState(), x.getPostalCode()));
-                        list.add(x.getQualification());
-                        list.add(x.getLinkedinUrl());
-                        list.add(x.getCitizenshipStudyStatus());
-                        list.add(x.getAustralianWorkRights());
-                        list.add(x.getNumberYearsWorkExperience());
-                        list.add(x.getPreviousTeachingExperience());
-                        list.add(x.getPublications());
-                        return list;
-                    }).collect(Collectors.toList());
-
-                    log.info("Successfully combined user data list: {} ",
-                            TpspUtils.toJsonString(mapper, result));
-                    return result;
-                });
-
-        // blocking and get
-        ByteArrayInputStream byteData;
-        try {
-            byteData = excelHelper.toExcelReport(combinedFuture.get(),
-                    convenorRateHeader, convenorRateSheet);
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("Error running query {}", e);
-            throw new TpspException("Error while extracting convenor data!");
-        }
-
-        ExcelReportDTO result = ExcelReportDTO.builder()
-                .fileName(convenorRateSheet + TPSPConstants.FILE_EXTENSION)
-                .data(byteData).build();
-        log.info("Done creating excel data ...");
-
-        return result;
+            UserDTO tutor = x.getTutor();
+            if (tutor == null) {
+                IntStream.range(0, 14).forEach(i -> payloadRow.add(TPSPConstants.EMPTY));
+            } else {
+                payloadRow.add(tutor.getUserName());
+                payloadRow.add(TpspUtils.toFullName(tutor.getFirstName(), tutor.getLastName()));
+                payloadRow.add(tutor.getEmail());
+                payloadRow.add(tutor.getPhoneNumber());
+                payloadRow.add(x.getRating());
+                payloadRow.add(tutor.getSwinburneId());
+                payloadRow.add(TpspUtils.concatenateAddress(tutor.getStreet(), tutor.getCity(),
+                        tutor.getState(), tutor.getPostalCode()));
+                payloadRow.add(tutor.getQualification());
+                payloadRow.add(tutor.getLinkedinUrl());
+                payloadRow.add(tutor.getCitizenshipStudyStatus());
+                payloadRow.add(tutor.getAustralianWorkRights());
+                payloadRow.add(tutor.getNumberYearsWorkExperience());
+                payloadRow.add(tutor.getPreviousTeachingExperience());
+                payloadRow.add(tutor.getPublications());
+            }
+            return payloadRow;
+        }).collect(Collectors.toList());
+        log.info("Done preparing convenor ranking rows {}", excelPayloads);
+        return toExcelDTO(excelPayloads, convenorRateHeader, convenorRateSheet, null);
     }
 
     @Override
     public ExcelReportDTO loadAllocationFile() {
         log.info("Loading allocation file ...");
         List<Application> apps = applicationRepo.findByApproved(TPSPConstants.APPROVED);
-        return toExcelDTO(apps, appHeader, allocationSheet);
+        return toApplicationExcelDTO(apps, appHeader, allocationSheet, null);
     }
 
-    private ExcelReportDTO toExcelDTO (List<Application> apps, List<String> headerCols, String sheetName) {
+    private ExcelReportDTO toApplicationExcelDTO(List<Application> apps, List<String> headerCols,
+                                                 String sheetName, List<List<ExtraCellDTO>> extraCells) {
 
         Set<String> userIds = new HashSet<>();
         Set<Integer> clazzIds = new HashSet<>();
@@ -199,16 +174,12 @@ public class ExcelServiceImpl implements ExcelService {
         // final data
         CompletableFuture<List<List<Object>>> combinedFuture = initExcelDataList(apps, clazzFuture, userFuture);
 
-        ByteArrayInputStream byteData;
         try {
-            byteData = excelHelper.toExcelReport(combinedFuture.get(), headerCols, sheetName);
-            log.info("Done creating excel data ...");
+            return toExcelDTO(combinedFuture.get(), headerCols, sheetName, extraCells);
         } catch (ExecutionException | InterruptedException e) {
-            log.error("Error running query {}", e);
+            log.error("Error printing excel data {}", e);
             throw new TpspException("Failed to download the application file!");
         }
-        return new ExcelReportDTO(sheetName + TPSPConstants.FILE_EXTENSION, byteData);
-
     }
 
     private CompletableFuture<Map<Integer, ClazzDTO>> initClazzFuture(Set<String> userIds, Set<Integer> clazzIds) {
@@ -314,22 +285,18 @@ public class ExcelServiceImpl implements ExcelService {
                                 : TPSPConstants.EMPTY);
                         list.add(unitDTO.getUnitLink());
                     } else {
-                        for (int i = 0; i < 4; i++) {
-                            list.add(TPSPConstants.EMPTY);
-                        }
+                        IntStream.range(0, 4).forEach(i -> list.add(TPSPConstants.EMPTY));
                     }
                     list.add(clazzDTO.getClassType());
                     UserDTO allocatedTutor = userData.get(clazzDTO.getTutorAllocated());
                     list.add(allocatedTutor != null
                             ? TpspUtils.toFullName(allocatedTutor.getFirstName(), allocatedTutor.getLastName())
                             : TPSPConstants.EMPTY);
-                    list.add(clazzDTO.getStudyPeriod() + " " + clazzDTO.getYear());
+                    list.add(clazzDTO.getStudyPeriod() + TPSPConstants.HYPHEN + clazzDTO.getYear());
                     list.add(clazzDTO.getDayOfWeek());
                     list.add(clazzDTO.getStartDate());
                 } else {
-                    for (int i = 0; i < 9; i++) {
-                        list.add(TPSPConstants.EMPTY);
-                    }
+                    IntStream.range(0, 9).forEach(i -> list.add(TPSPConstants.EMPTY));
                 }
 
                 list.add(x.getApproved());
@@ -340,5 +307,29 @@ public class ExcelServiceImpl implements ExcelService {
             log.info("Successfully combined application data list: {} ", result);
             return result;
         });
+    }
+
+    private ExcelReportDTO toExcelDTO(List<List<Object>> rows, List<String> headerCols, String sheetName,
+                                      List<List<ExtraCellDTO>> extraCells) {
+        ByteArrayInputStream byteData = excelHelper.toExcelReport(rows, headerCols, sheetName, extraCells);
+        log.info("Done creating excel data ...");
+        return new ExcelReportDTO(sheetName + TPSPConstants.FILE_EXTENSION, byteData);
+    }
+
+    private List<List<ExtraCellDTO>> getExtraAppCells() {
+        String formula = MessageFormat.format(TPSPConstants.COUNT_IF_FORMULA,
+                approvedColLetter, TPSPConstants.YES);
+
+        ExtraCellDTO dto = ExtraCellDTO.builder()
+                .label("Total Approved").value(formula)
+                .type(CellType.FORMULA).requiredColIndex(true)
+                .criterion(TPSPConstants.YES).build();
+        log.info("Prepared extra rows {}", dto);
+
+        return new ArrayList<List<ExtraCellDTO>>() {{
+            add(new ArrayList<ExtraCellDTO>() {{
+                add(dto);
+            }});
+        }};
     }
 }

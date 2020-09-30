@@ -4,7 +4,6 @@ import lombok.Data;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.util.List;
 
 @Data
 @Entity (name = "AspNetUserRoles")
@@ -14,6 +13,9 @@ public class UserRole implements Serializable {
 
     @EmbeddedId
     UserRoleCompositeKey userRoleKey;
+
+    // feel free to configure the shit as I cannot bother configuring 2 tables with composite keys
+    // previous teams did not even include an increment column either
 
 //    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 //    @JoinColumn(name = "RoleId", referencedColumnName = "Id")

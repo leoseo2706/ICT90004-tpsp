@@ -30,7 +30,6 @@ public class Role {
     @Column(name = "CreationDate")
     private Timestamp creationDate;
 
-    // only this one works
 //    @OneToMany(mappedBy = "userRoleKey.roleId", cascade = CascadeType.ALL)
 //    private List<UserRole> userRoles;
 }

@@ -13,11 +13,13 @@ public class TutorPreference {
     @Column(name = "Id")
     private Integer Id;
 
-    @Column(name = "ConvenorId")
-    private String convenorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ConvenorId")
+    private User convenor;
 
-    @Column(name = "TutorId")
-    private String tutorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TutorId")
+    private User tutor;
 
     @Column(name = "Rating")
     private Integer rating;

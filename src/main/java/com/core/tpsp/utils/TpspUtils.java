@@ -56,8 +56,9 @@ public class TpspUtils {
     }
 
     public static String toFullName(String firstName, String lastName) {
-        return !StringUtils.isEmpty(firstName) && !StringUtils.isEmpty(lastName)
-                ? (firstName + " " + lastName).trim() : TPSPConstants.EMPTY;
+        String tmp1 = StringUtils.isEmpty(firstName) ? TPSPConstants.EMPTY : firstName;
+        String tmp2 = StringUtils.isEmpty(lastName) ? TPSPConstants.EMPTY : lastName;
+        return (firstName + TPSPConstants.SPACE + lastName).trim();
     }
 
 }

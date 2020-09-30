@@ -17,6 +17,10 @@ public class Clazz {
     @Column(name = "UnitId")
     private Integer unitId;
 
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "UnitId", insertable = false, updatable = false)
+//    private Unit unit;
+
     @Column(name = "ClassType")
     private String classType;
 
