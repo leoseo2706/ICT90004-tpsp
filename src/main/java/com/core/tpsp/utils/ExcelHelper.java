@@ -32,8 +32,7 @@ public class ExcelHelper {
     public ByteArrayInputStream toExcelReport(List<List<Object>> payloads, List<String> headerCols,
                                               String sheetName, List<List<ExtraCellDTO>> extraRows) {
 
-        if (CollectionUtils.isEmpty(payloads) || CollectionUtils.isEmpty(headerCols)
-                || StringUtils.isEmpty(sheetName)) {
+        if (CollectionUtils.isEmpty(headerCols) || StringUtils.isEmpty(sheetName)) {
             log.info("Empty payload");
             return new ByteArrayInputStream(new byte[0]);
         }
@@ -74,15 +73,17 @@ public class ExcelHelper {
             log.info("Finished header {}...", TpspUtils.toJsonString(mapper, headerCols));
 
             // body rows
-            payloads.forEach(cells -> {
-                Row row = sheet.createRow(rowIdx.getAndIncrement());
-                AtomicInteger colIdx = new AtomicInteger();
-                cells.forEach(value -> {
-                    Cell cell = row.createCell(colIdx.getAndIncrement());
-                    setCellBasedOnType(cell, value, null, null);
+            if (!CollectionUtils.isEmpty(payloads)) {
+                payloads.forEach(cells -> {
+                    Row row = sheet.createRow(rowIdx.getAndIncrement());
+                    AtomicInteger colIdx = new AtomicInteger();
+                    cells.forEach(value -> {
+                        Cell cell = row.createCell(colIdx.getAndIncrement());
+                        setCellBasedOnType(cell, value, null, null);
+                    });
+                    log.info("Finished row {}...", TpspUtils.toJsonString(mapper, cells));
                 });
-                log.info("Finished row {}...", TpspUtils.toJsonString(mapper, cells));
-            });
+            }
 
             int lastRowIdx = rowIdx.get();
             String firstColLetter = firstColLetterAR.get();
@@ -159,6 +160,8 @@ public class ExcelHelper {
                 cell.setCellFormula((String) cellValue);
             } else if (cellValue instanceof java.lang.Integer) {
                 cell.setCellValue((Integer) cellValue);
+            } else if (cellValue instanceof java.lang.Long) {
+                cell.setCellValue((Long) cellValue);
             } else if (cellValue instanceof java.lang.String) {
                 cell.setCellValue((String) cellValue);
             } else if (cellValue instanceof java.lang.Double) {

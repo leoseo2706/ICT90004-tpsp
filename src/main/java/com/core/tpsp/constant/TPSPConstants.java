@@ -26,4 +26,6 @@ public class TPSPConstants {
 
     public final static String TOTAL_ROW_FORMULA = "ROWS({0}{1}:{0}{2})";
     public final static String COUNT_IF_FORMULA = "COUNTIF({0}{2}:{0}{3}, \"{1}\")";
+
+    public final static String APPLICANT = "Applicant";
 }

@@ -57,13 +57,6 @@
 			<version>${apache.version}</version>
 		</dependency>
 
-		<!-- to parse CSV -->
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-csv</artifactId>
-			<version>1.5</version>
-		</dependency>
-
 		<!-- Utility -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>

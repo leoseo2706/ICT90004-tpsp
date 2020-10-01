@@ -17,13 +17,8 @@ public class UserRole implements Serializable {
     // feel free to configure the shit as I cannot bother configuring 2 tables with composite keys
     // previous teams did not even include an increment column either
 
-//    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    @JoinColumn(name = "RoleId", referencedColumnName = "Id")
-//    private List<Role> roles;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "RoleId")
+//    private Role role;
 
-//    @OneToOne(mappedBy = "userRole")
-//    private User user;
-
-//    @OneToOne(mappedBy = "userRole", cascade = CascadeType.ALL)
-//    private User user;
 }

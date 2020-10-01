@@ -4,6 +4,7 @@ import lombok.Data;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -30,6 +31,7 @@ public class Role {
     @Column(name = "CreationDate")
     private Timestamp creationDate;
 
-//    @OneToMany(mappedBy = "userRoleKey.roleId", cascade = CascadeType.ALL)
-//    private List<UserRole> userRoles;
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RoleId")
+    private List<UserRole> userRoles = new ArrayList<>();
 }

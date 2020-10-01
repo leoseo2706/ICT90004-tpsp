@@ -35,6 +35,11 @@ public class ExcelController {
         return buildExcelResponse(excelService.loadAllocationFile());
     }
 
+    @GetMapping("/download/tutors")
+    public ResponseEntity<Resource> downloadTutorList() {
+        return buildExcelResponse(excelService.loadTutorListFile());
+    }
+
     private ResponseEntity buildExcelResponse(ExcelReportDTO result) {
         InputStreamResource file = new InputStreamResource(result.getData());
         return ResponseEntity.ok()

@@ -1,9 +1,7 @@
 package com.core.tpsp.service;
 
 import com.core.tpsp.constant.TPSPConstants;
-import com.core.tpsp.entity.Application;
-import com.core.tpsp.entity.TutorPreference;
-import com.core.tpsp.entity.User;
+import com.core.tpsp.entity.*;
 import com.core.tpsp.exception.TpspException;
 import com.core.tpsp.payload.*;
 import com.core.tpsp.repo.*;
@@ -44,6 +42,12 @@ public class ExcelServiceImpl implements ExcelService {
     @Value("${report.convenor.ranking.sheet}")
     private String convenorRateSheet;
 
+    @Value("#{'${report.tutor.header}'.split(',')}")
+    private List<String> reportTutorHeader;
+
+    @Value("${report.tutor.sheet}")
+    private String reportTutorSheet;
+
     @Value("${report.allocation.sheet}")
     private String allocationSheet;
 
@@ -70,6 +74,9 @@ public class ExcelServiceImpl implements ExcelService {
 
     @Autowired
     private UnitRepo unitRepo;
+
+    @Autowired
+    private RoleRepo roleRepo;
 
     @Override
     public ExcelReportDTO loadApplicationFile() {
@@ -136,6 +143,77 @@ public class ExcelServiceImpl implements ExcelService {
         }).collect(Collectors.toList());
         log.info("Done preparing convenor ranking rows {}", excelPayloads);
         return toExcelDTO(excelPayloads, convenorRateHeader, convenorRateSheet, null);
+    }
+
+    @Override
+    public ExcelReportDTO loadTutorListFile() {
+
+        log.info("Loading tutor list file ...");
+        Optional<Role> applicantRole = roleRepo.findByName(TPSPConstants.APPLICANT);
+        if (!applicantRole.isPresent()) {
+            throw new TpspException(MessageFormat.format("Cannot find the role {0}",
+                    TPSPConstants.APPLICANT));
+        }
+
+        List<UserRole> applicantRoles = applicantRole.get().getUserRoles();
+        if (CollectionUtils.isEmpty(applicantRoles)) {
+            // return empty file
+            return toExcelDTO(null, reportTutorHeader, reportTutorSheet, null);
+        }
+
+        Set<String> applicantIds = applicantRoles.stream()
+                .map(a -> a.getUserRoleKey().getUserId()).collect(Collectors.toSet());
+
+        // find applicant info
+        CompletableFuture<List<UserDTO>> applicantFuture = CompletableFuture.supplyAsync(() -> {
+            List<UserDTO> applicants = userRepo.findByIdIn(applicantIds).stream().map(a -> {
+                UserDTO dto = UserDTO.builder().build();
+                BeanUtils.copyProperties(a, dto);
+                return dto;
+            }).collect(Collectors.toList());
+            log.info("Found the list of applicants {}", applicantIds);
+            return applicants;
+        });
+
+        // find total applications of applicant
+        CompletableFuture<Map<String, Long>> totalAppFuture = CompletableFuture.supplyAsync(() -> {
+            List<Application> apps = applicationRepo.findByApplicantIn(applicantIds);
+            return apps.stream().collect(Collectors.groupingBy(Application::getApplicant,
+                    Collectors.counting()));
+        });
+
+        CompletableFuture<List<List<Object>>> excelPayloadFuture = applicantFuture
+                .thenCombine(totalAppFuture, (applicantData, totalAppData) -> {
+                    List<List<Object>> excelPayloads = applicantData.stream().map(a -> {
+                        List<Object> list = new ArrayList<>();
+                        list.add(a.getUserName());
+                        list.add(TpspUtils.toFullName(a.getFirstName(), a.getLastName()));
+                        list.add(a.getEmail());
+                        list.add(a.getPhoneNumber());
+                        list.add(a.getSwinburneId());
+                        list.add(TpspUtils.concatenateAddress(a.getStreet(), a.getCity(),
+                                a.getState(), a.getPostalCode()));
+                        list.add(a.getQualification());
+                        list.add(a.getLinkedinUrl());
+                        list.add(a.getCitizenshipStudyStatus());
+                        list.add(a.getAustralianWorkRights());
+                        list.add(a.getNumberYearsWorkExperience());
+                        list.add(a.getPreviousTeachingExperience());
+                        list.add(a.getPublications());
+                        Long totalApps = totalAppData.get(a.getId());
+                        list.add(totalApps == null ? 0 : totalApps);
+                        return list;
+                    }).collect(Collectors.toList());
+                    log.info("Done preparing tutor list rows {}", excelPayloads);
+                    return excelPayloads;
+                });
+
+        try {
+            return toExcelDTO(excelPayloadFuture.get(), reportTutorHeader, reportTutorSheet, null);
+        } catch (ExecutionException | InterruptedException e) {
+            log.error("Error combining tutor list data {}", e);
+            throw new TpspException("Error encountered while downloading tutor list!");
+        }
     }
 
     @Override
