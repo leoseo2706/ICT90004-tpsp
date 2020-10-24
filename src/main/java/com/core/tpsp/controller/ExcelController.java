@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/excel")
@@ -30,7 +29,7 @@ public class ExcelController {
         return buildExcelResponse(excelService.loadConvenorRankingFile());
     }
 
-    @GetMapping("/download/allocation")
+    @GetMapping("/download/allocations")
     public ResponseEntity<Resource> downloadAllocationFile() {
         return buildExcelResponse(excelService.loadAllocationFile());
     }

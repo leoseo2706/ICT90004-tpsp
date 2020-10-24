@@ -9,7 +9,7 @@ public class TpspException extends RuntimeException {
 private static final long serialVersionUID = 7374076822728601201L;
 	
 	@Getter
-	private int code;
+	private int code; // not HTTP code but a custom code
 	
 	public TpspException(String msg) {
 		super(msg);

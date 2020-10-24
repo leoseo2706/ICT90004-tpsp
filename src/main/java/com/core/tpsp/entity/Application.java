@@ -14,9 +14,6 @@ public class Application {
     @Column(name = "ApplicationId")
     private Integer applicationId;
 
-    @Column(name = "Id")
-    private Integer id;
-
     @Column(name = "Applicant")
     private String applicant;
 

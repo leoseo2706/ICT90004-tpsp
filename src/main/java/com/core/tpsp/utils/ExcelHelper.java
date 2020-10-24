@@ -53,7 +53,7 @@ public class ExcelHelper {
             AtomicInteger rowIdx = new AtomicInteger();
             AtomicReference<String> firstColLetterAR = new AtomicReference<String>(null);
             int headerSize = headerCols.size();
-            int extraValueColIdx = headerSize - 1;
+            int extraValueColIdx = 1;
             int extraLabelColIdx = extraValueColIdx - 1;
 
             // header creation
@@ -81,7 +81,7 @@ public class ExcelHelper {
                         Cell cell = row.createCell(colIdx.getAndIncrement());
                         setCellBasedOnType(cell, value, null, null);
                     });
-                    log.info("Finished row {}...", TpspUtils.toJsonString(mapper, cells));
+                    log.debug("Finished row {}...", TpspUtils.toJsonString(mapper, cells));
                 });
             }
 
